@@ -1,14 +1,17 @@
 import Phaser from 'phaser';
+import BaseScene from './BaseScene';
 
 const PIPES_TO_RENDER = 4;
 
-class PlayScene extends Phaser.Scene {
+class PlayScene extends BaseScene {
 
   constructor(config) {
-    super('PlayScene');
-    this.config = config;
+    super('PlayScene', config);
+
     this.bird = null;
     this.pipes = null;
+
+    this.isPaused = false;
     this.pipeHorizontalDistance = 0;
     this.pipeOpenedRange = [150, 250];
     this.pipeBetweenRange = [500, 550];
@@ -17,28 +20,20 @@ class PlayScene extends Phaser.Scene {
     this.scoreText = '';
   }
 
-  preload() {
-    this.load.image('sky', 'assets/sky.png');
-    this.load.image('bird', 'assets/bird.png');
-    this.load.image('pipe', 'assets/pipe.png');
-  }
-
   create() {
-    this.createBG();
+    super.create()
     this.createBird();
     this.createPipes();
     this.createColliders();
     this.createScore();
+    this.createPause();
     this.handleInputs();
+    this.listenToEvents();
   }
 
   update() {
     this.checkGameStatus();
     this.recyclePipes();
-  }
-
-  createBG() {
-    this.add.image(0, 0, 'sky').setOrigin(0);
   }
 
   createBird() {
@@ -86,9 +81,50 @@ class PlayScene extends Phaser.Scene {
     }
   }
 
+  createPause() {
+    const pauseButton = this.add.image(this.config.width - 50, this.config.height - 50, 'pause')
+      .setInteractive()
+      .setScale(2)
+      .setOrigin(0);
+
+    pauseButton.on('pointerdown', () => {
+      this.isPaused = true;
+      this.physics.pause();
+      this.scene.pause();
+      this.scene.launch('PauseScene');
+    })
+  }
+
   handleInputs() {
     this.input.on('pointerdown', this.flap, this);
     this.input.keyboard.on('keydown_SPACE', this.flap, this);
+  }
+
+  listenToEvents() {
+    if (this.pauseEvent) return;
+
+    this.pauseEvent = this.events.on('resume', () => {
+      this.initialTime = 3;
+      this.countDownText = this.add.text(...this.screenCenter, `Fly in: ${this.initialTime}`, this.fontOption)
+        .setOrigin(0.5);
+      this.timedEvent = this.time.addEvent({
+        delay: 1000,
+        callback: this.countDown,
+        callbackScope: this,
+        loop: true
+      })
+    })
+  }
+
+  countDown() {
+    this.initialTime--;
+    this.countDownText.setText(`Fly in: ${this.initialTime}`);
+    if (this.initialTime <= 0) {
+      this.isPaused = false;
+      this.countDownText.setText('');
+      this.physics.resume();
+      this.timedEvent.remove();
+    }
   }
 
   checkGameStatus() {
@@ -146,6 +182,7 @@ class PlayScene extends Phaser.Scene {
   }
 
   flap() {
+    if (this.isPaused) return;
     this.bird.body.velocity.y = -this.flapVelocity;
   }
 
