@@ -15,12 +15,30 @@ class PlayScene extends BaseScene {
     this.pipeHorizontalDistance = 0;
     this.pipeOpenedRange = [150, 250];
     this.pipeBetweenRange = [500, 550];
-    this.flapVelocity = 250;
+    this.flapVelocity = 300;
     this.score = 0;
     this.scoreText = '';
+
+    this.currentDifficulty = '';
+    this.difficulties = {
+      'easy': {
+        pipeOpenedRange: [150, 250],
+        pipeBetweenRange: [500, 550]
+      },
+      'normal': {
+        pipeOpenedRange: [130, 220],
+        pipeBetweenRange: [450, 500]
+      },
+      'hard': {
+        pipeOpenedRange: [120, 180],
+        pipeBetweenRange: [350, 400]
+      },
+
+    }
   }
 
   create() {
+    this.currentDifficulty = 'easy';
     super.create()
     this.createBird();
     this.createPipes();
@@ -38,7 +56,7 @@ class PlayScene extends BaseScene {
 
   createBird() {
     this.bird = this.physics.add.sprite(this.config.startPosition.x, this.config.startPosition.y, 'bird').setOrigin(0);
-    this.bird.body.gravity.y = 400;
+    this.bird.body.gravity.y = 500;
     this.bird.setCollideWorldBounds(true);
   }
 
@@ -134,10 +152,11 @@ class PlayScene extends BaseScene {
   }
 
   placePipe(uPipe, lPipe) {
+    const difficulty = this.difficulties[this.currentDifficulty]
     const rightMostX = this.getRightMostPipe();
-    const pipeVerticalDistance = Phaser.Math.Between(...this.pipeOpenedRange);
+    const pipeVerticalDistance = Phaser.Math.Between(...difficulty.pipeOpenedRange);
     const pipeVerticalPosition = Phaser.Math.Between(0 + 20, this.config.height - 20 - pipeVerticalDistance);
-    const pipeHorizontalDistance = Phaser.Math.Between(...this.pipeBetweenRange);
+    const pipeHorizontalDistance = Phaser.Math.Between(...difficulty.pipeBetweenRange);
     uPipe.x = rightMostX + pipeHorizontalDistance;
     uPipe.y = pipeVerticalPosition;
     lPipe.x = uPipe.x;
@@ -160,10 +179,20 @@ class PlayScene extends BaseScene {
         if (tempPipes.length === 2) {
           this.placePipe(...tempPipes);
           this.increaceScore();
+          this.increaceDificulty();
           this.saveBestScore();
         }
       }
     })
+  }
+
+  increaceDificulty() {
+    if (this.score === 2) {
+      this.currentDifficulty = 'normal'
+    }
+    if (this.score === 5) {
+      this.currentDifficulty = 'hard'
+    }
   }
 
   gameOver() {
