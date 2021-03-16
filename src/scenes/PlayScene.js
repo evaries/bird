@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+
 import BaseScene from './BaseScene';
 
 const PIPES_TO_RENDER = 4;
@@ -41,6 +42,7 @@ class PlayScene extends BaseScene {
     this.currentDifficulty = 'easy';
     super.create()
     this.createBird();
+    this.createBirdAnimation();
     this.createPipes();
     this.createColliders();
     this.createScore();
@@ -55,9 +57,25 @@ class PlayScene extends BaseScene {
   }
 
   createBird() {
-    this.bird = this.physics.add.sprite(this.config.startPosition.x, this.config.startPosition.y, 'bird').setOrigin(0);
+    this.bird = this.physics.add.sprite(this.config.startPosition.x, this.config.startPosition.y, 'bird')
+      .setFlipX(true)
+      .setScale(2.5)
+      .setOrigin(0);
+
+    this.bird.setBodySize(this.bird.width, this.bird.height - 8);
     this.bird.body.gravity.y = 500;
     this.bird.setCollideWorldBounds(true);
+  }
+
+  createBirdAnimation() {
+    this.anims.create({
+      key: 'birdFly',
+      frames: this.anims.generateFrameNumbers('bird', { start: 8, end: 15 },),
+      frameRate: 8,
+      repeat: -1
+    });
+
+    this.bird.play('birdFly');
   }
 
   createPipes() {
@@ -187,10 +205,10 @@ class PlayScene extends BaseScene {
   }
 
   increaceDificulty() {
-    if (this.score === 2) {
+    if (this.score === 3) {
       this.currentDifficulty = 'normal'
     }
-    if (this.score === 5) {
+    if (this.score === 8) {
       this.currentDifficulty = 'hard'
     }
   }
@@ -207,7 +225,9 @@ class PlayScene extends BaseScene {
         this.scene.restart()
       },
       loop: false
-    })
+    });
+
+    this.bird.anims.stop()
   }
 
   flap() {
